@@ -1,0 +1,39 @@
+version: '3.7'
+
+services:
+
+  web:
+    image: node:20-alpine
+    restart: "no"
+    env_file:
+      - .env.example
+      - .env
+    volumes:
+      - ./web:/project/web
+    working_dir: /project/web
+    ports:
+      - ${WEB_HTTP_PORT_HOST}:8080
+    command: [ sh, -c, "npm c set cache /tmp --global && yarn && yarn dev" ]
+
+  backend:
+    image: python:3.12-slim
+    restart: "no"
+    env_file:
+      - .env
+    ports:
+      - ${API_HTTP_PORT_HOST}:8000
+    volumes:
+      - ./backend:/project/backend
+      - pip-data:/usr/local/lib/python3.12/site-packages/
+      - cache-data:/root/.cache
+    working_dir: /project/backend/server
+    command: [ sh, -c, "pip install -r requirements.txt && python -m uvicorn main:app --workers 1 --host 0.0.0.0 --port 8000" ]
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 24G
+
+volumes:
+  pip-data:
+  cache-data:
